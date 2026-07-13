@@ -1,0 +1,42 @@
+using ForexAlert.Domain;
+using ForexAlert.MarketData;
+using ForexAlert.Scheduling;
+using Microsoft.Extensions.Options;
+
+namespace ForexAlert.Alerts.Rules;
+
+public sealed class OneMinuteMovementRule(
+    IPriceHistoryStore history,
+    IMarketSchedule marketSchedule,
+    IOptions<AlertOptions> options) : AlertRuleBase(marketSchedule)
+{
+    public const string RuleName = "one-minute-movement";
+    private static readonly TimeSpan Interval = TimeSpan.FromMinutes(1);
+    private readonly bool _enabled = options.Value.OneMinuteEnabled;
+    private readonly double _threshold = options.Value.OneMinuteThresholdPercent;
+
+    public override string Name => RuleName;
+
+    public override ValueTask<AlertCandidate?> EvaluateAsync(
+        CurrencyPair pair,
+        DateTimeOffset evaluationTimeUtc,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!_enabled)
+        {
+            return ValueTask.FromResult<AlertCandidate?>(null);
+        }
+
+        Candle? candle = history.GetCompletedCandles(pair, Interval, evaluationTimeUtc, 1).LastOrDefault();
+        if (candle is null)
+        {
+            return ValueTask.FromResult<AlertCandidate?>(null);
+        }
+
+        double change = PriceMath.PercentageChange(candle.Open, candle.Close);
+        return ValueTask.FromResult<AlertCandidate?>(Math.Abs(change) >= _threshold
+            ? CreateCandidate(pair, candle, candle.StartUtc, candle.Open, candle.EndUtc, candle.Close, change, _threshold, evaluationTimeUtc)
+            : null);
+    }
+}

@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - name: Restore
+        run: dotnet restore ForexAlert.sln
+
+      - name: Build
+        run: dotnet build ForexAlert.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test ForexAlert.sln -c Release --no-build
+
+      - name: Verify formatting
+        run: dotnet format ForexAlert.sln --verify-no-changes --no-restore
+
+      - name: Validate safe configuration
+        run: dotnet run --project src/ForexAlert/ForexAlert.csproj -c Release --no-build -- --validate-config
+
+      - name: Run offline simulation
+        run: dotnet run --project src/ForexAlert/ForexAlert.csproj -c Release --no-build -- --simulate sample-stream
+
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      IBApiAssemblyPath: ''

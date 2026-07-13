@@ -1,0 +1,35 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,csx}]
+indent_style = space
+indent_size = 4
+csharp_new_line_before_open_brace = all
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_prefer_primary_constructors = false:suggestion
+dotnet_sort_system_directives_first = true
+dotnet_diagnostic.IDE0005.severity = warning
+dotnet_diagnostic.CA2007.severity = none
+
+[*.{json,jsonl,yml,yaml,md}]
+indent_style = space
+indent_size = 2
+
+[src/ForexAlert/ThirdParty/IBKR/*.cs]
+generated_code = true
+charset = unset
+end_of_line = unset
+indent_style = unset
+indent_size = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+csharp_style_namespace_declarations = block_scoped:none
+dotnet_analyzer_diagnostic.severity = none
+dotnet_diagnostic.IDE0055.severity = none
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0161.severity = none

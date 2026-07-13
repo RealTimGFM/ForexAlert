@@ -1,0 +1,94 @@
+{
+  "name": "completed-bars-and-live-quote",
+  "evaluateAtUtc": "2026-07-06T14:00:00Z",
+  "events": [
+    {
+      "type": "candle",
+      "symbol": "EUR/USD",
+      "timestampUtc": "2026-06-29T00:00:00Z",
+      "interval": "1d",
+      "open": 0.998,
+      "high": 1.002,
+      "low": 0.997,
+      "close": 1.000
+    },
+    {
+      "type": "candle",
+      "symbol": "EUR/USD",
+      "timestampUtc": "2026-06-30T00:00:00Z",
+      "interval": "1d",
+      "open": 1.000,
+      "high": 1.012,
+      "low": 0.999,
+      "close": 1.010
+    },
+    {
+      "type": "candle",
+      "symbol": "EUR/USD",
+      "timestampUtc": "2026-07-01T00:00:00Z",
+      "interval": "1d",
+      "open": 1.010,
+      "high": 1.023,
+      "low": 1.009,
+      "close": 1.020
+    },
+    {
+      "type": "candle",
+      "symbol": "EUR/USD",
+      "timestampUtc": "2026-07-02T00:00:00Z",
+      "interval": "1d",
+      "open": 1.020,
+      "high": 1.042,
+      "low": 1.019,
+      "close": 1.040
+    },
+    {
+      "type": "candle",
+      "symbol": "EUR/USD",
+      "timestampUtc": "2026-07-03T00:00:00Z",
+      "interval": "1d",
+      "open": 1.040,
+      "high": 1.062,
+      "low": 1.039,
+      "close": 1.060
+    },
+    {
+      "type": "candle",
+      "symbol": "EUR/USD",
+      "timestampUtc": "2026-07-06T12:00:00Z",
+      "interval": "1h",
+      "open": 1.060,
+      "high": 1.078,
+      "low": 1.059,
+      "close": 1.076
+    },
+    {
+      "type": "quote",
+      "symbol": "EUR/USD",
+      "side": "bid",
+      "timestampUtc": "2026-07-06T13:00:01Z",
+      "price": 1.0599
+    },
+    {
+      "type": "quote",
+      "symbol": "EUR/USD",
+      "side": "ask",
+      "timestampUtc": "2026-07-06T13:00:01Z",
+      "price": 1.0601
+    },
+    {
+      "type": "quote",
+      "symbol": "EUR/USD",
+      "side": "bid",
+      "timestampUtc": "2026-07-06T13:59:59Z",
+      "price": 1.0799
+    },
+    {
+      "type": "quote",
+      "symbol": "EUR/USD",
+      "side": "ask",
+      "timestampUtc": "2026-07-06T13:59:59Z",
+      "price": 1.0801
+    }
+  ]
+}

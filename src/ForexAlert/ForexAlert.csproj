@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>ForexAlert</AssemblyName>
+    <RootNamespace>ForexAlert</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <UserSecretsId>ForexAlert-Development</UserSecretsId>
+    <DefineConstants Condition="Exists('$(IBApiAssemblyPath)')">$(DefineConstants);IBAPI_AVAILABLE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(IBApiAssemblyPath)')">
+    <Reference Include="IBApi">
+      <HintPath>$(IBApiAssemblyPath)</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="!Exists('$(IBApiAssemblyPath)')">
+    <Compile Remove="Infrastructure\Ibkr\IbkrCallbackAdapter.cs" />
+    <Compile Remove="Infrastructure\Ibkr\IbkrSocketTransport.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="appsettings.Development.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Simulation\Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
