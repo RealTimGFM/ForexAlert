@@ -3,19 +3,19 @@ using Microsoft.Extensions.Options;
 
 namespace ForexAlert.Scheduling;
 
-public sealed class FxMarketSchedule : IMarketSchedule
+public sealed class FxMarketSchedule
 {
-    private readonly MarketScheduleOptions _options;
+    private readonly ForexAlertOptions _options;
     private readonly TimeZoneInfo _timeZone;
     private readonly TimeSpan _weeklyClose;
     private readonly TimeSpan _weeklyOpen;
 
-    public FxMarketSchedule(IOptions<MarketScheduleOptions> options)
+    public FxMarketSchedule(IOptions<ForexAlertOptions> options)
     {
         _options = options.Value;
-        _timeZone = TimeZoneInfo.FindSystemTimeZoneById(_options.TimeZone);
-        _weeklyClose = TimeSpan.FromDays((int)_options.FridayCloseDay).Add(_options.FridayCloseTime);
-        _weeklyOpen = TimeSpan.FromDays((int)_options.SundayOpenDay).Add(_options.SundayOpenTime);
+        _timeZone = TimeZoneInfo.FindSystemTimeZoneById(_options.MarketTimeZone);
+        _weeklyClose = TimeSpan.FromDays((int)DayOfWeek.Friday).Add(_options.FridayCloseTime);
+        _weeklyOpen = TimeSpan.FromDays((int)DayOfWeek.Sunday).Add(_options.SundayOpenTime);
     }
 
     public bool IsOpen(DateTimeOffset timestampUtc)
@@ -47,13 +47,13 @@ public sealed class FxMarketSchedule : IMarketSchedule
     {
         DateTimeOffset marketTime = ToMarketTime(timestampUtc);
         DateTime openingDate = marketTime.Date;
-        TimeSpan openingTime = marketTime.DayOfWeek == _options.SundayOpenDay
+        TimeSpan openingTime = marketTime.DayOfWeek == DayOfWeek.Sunday
             ? _options.SundayOpenTime
             : _options.TradingDayOpenTime;
         if (marketTime.TimeOfDay < openingTime)
         {
             openingDate = openingDate.AddDays(-1);
-            openingTime = openingDate.DayOfWeek == _options.SundayOpenDay
+            openingTime = openingDate.DayOfWeek == DayOfWeek.Sunday
                 ? _options.SundayOpenTime
                 : _options.TradingDayOpenTime;
         }
@@ -64,7 +64,7 @@ public sealed class FxMarketSchedule : IMarketSchedule
         if (_timeZone.IsInvalidTime(localOpening))
         {
             throw new InvalidOperationException(
-                $"Configured trading-day opening {localOpening:O} is invalid in time zone {_options.TimeZone}.");
+                $"Configured trading-day opening {localOpening:O} is invalid in time zone {_options.MarketTimeZone}.");
         }
 
         DateTime utcOpening = TimeZoneInfo.ConvertTimeToUtc(localOpening, _timeZone);
@@ -72,5 +72,5 @@ public sealed class FxMarketSchedule : IMarketSchedule
     }
 
     public string FormatMarketTime(DateTimeOffset timestampUtc) =>
-        $"{ToMarketTime(timestampUtc).ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture)} ({_options.TimeZone})";
+        $"{ToMarketTime(timestampUtc).ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture)} ({_options.MarketTimeZone})";
 }

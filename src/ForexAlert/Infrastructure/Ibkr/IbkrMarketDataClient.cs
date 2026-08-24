@@ -35,7 +35,7 @@ public sealed class IbkrMarketDataClient : IIbkrMarketDataClient
         IIbkrTransport transport,
         RequestIdRegistry requests,
         IOptions<IbkrOptions> options,
-        IOptions<MarketScheduleOptions> marketScheduleOptions,
+        IOptions<ForexAlertOptions> appOptions,
         TimeProvider timeProvider,
         ILogger<IbkrMarketDataClient> logger)
     {
@@ -43,9 +43,8 @@ public sealed class IbkrMarketDataClient : IIbkrMarketDataClient
         _requests = requests;
         _options = options.Value;
         _timeProvider = timeProvider;
-        MarketScheduleOptions marketSchedule = marketScheduleOptions.Value;
-        _marketTimeZone = TimeZoneInfo.FindSystemTimeZoneById(marketSchedule.TimeZone);
-        _tradingDayOpenTime = marketSchedule.TradingDayOpenTime;
+        _marketTimeZone = TimeZoneInfo.FindSystemTimeZoneById(appOptions.Value.MarketTimeZone);
+        _tradingDayOpenTime = appOptions.Value.TradingDayOpenTime;
         _logger = logger;
 
         _transport.TickReceived += OnTickReceived;
@@ -387,6 +386,16 @@ public sealed class IbkrMarketDataClient : IIbkrMarketDataClient
             return;
         }
 
+        if (IbkrErrorClassifier.IsHistoricalServiceStatus(error))
+        {
+            _logger.LogInformation(
+                "IBKR historical-data status code {Code} for request ID {RequestId}: {Message}",
+                error.Code,
+                error.RequestId,
+                error.Message);
+            return;
+        }
+
         if (IbkrErrorClassifier.IsInformational(error.Code))
         {
             _logger.LogInformation(
@@ -452,9 +461,10 @@ public sealed class IbkrMarketDataClient : IIbkrMarketDataClient
         }
 
         _logger.LogError(
-            "IBKR failure code {Code} for request ID {RequestId}",
+            "IBKR failure code {Code} for request ID {RequestId}: {Message}",
             error.Code,
-            error.RequestId);
+            error.RequestId,
+            error.Message);
     }
 
     private async Task ResubscribeActiveRequestsAsync(CancellationToken cancellationToken)

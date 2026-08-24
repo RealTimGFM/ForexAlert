@@ -5,7 +5,7 @@ namespace ForexAlert.MarketData;
 
 public sealed class CandleAggregator(
     IEnumerable<TimeSpan> intervals,
-    DateTimeOffset? startedAtUtc = null) : ICandleAggregator
+    DateTimeOffset? startedAtUtc = null)
 {
     private readonly TimeSpan[] _intervals = intervals.Distinct().Order().ToArray();
     private long _resetAtUtcTicks =

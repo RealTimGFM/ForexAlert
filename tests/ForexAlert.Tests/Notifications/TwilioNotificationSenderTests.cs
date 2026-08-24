@@ -10,36 +10,6 @@ namespace ForexAlert.Tests.Notifications;
 public sealed class TwilioNotificationSenderTests
 {
     [Fact]
-    public async Task SendAsync_DryRun_PerformsZeroHttpCalls()
-    {
-        ProbeHttpMessageHandler handler = new();
-        using HttpClient httpClient = new(handler)
-        {
-            BaseAddress = new Uri("https://api.twilio.invalid/", UriKind.Absolute),
-        };
-        TwilioNotificationSender sender = new(
-            httpClient,
-            Options.Create(new TwilioOptions
-            {
-                AccountSid = "must-not-be-used",
-                AuthToken = "must-not-be-used",
-                FromNumber = "+15555550101",
-                Recipients = ["+15555550102", "+15555550103"],
-            }),
-            Options.Create(new NotificationOptions
-            {
-                Provider = NotificationProvider.Twilio,
-                DryRun = true,
-            }),
-            TimeProvider.System,
-            NullLogger<TwilioNotificationSender>.Instance);
-
-        await sender.SendAsync(CreateAlert(), CancellationToken.None);
-
-        Assert.Equal(0, handler.CallCount);
-    }
-
-    [Fact]
     public async Task SendAsync_PartialFailure_RetriesOnlyRecipientsNotAlreadyDelivered()
     {
         SequencedResponseHandler handler = new(
@@ -58,11 +28,6 @@ public sealed class TwilioNotificationSenderTests
                 AuthToken = "test-token-not-a-secret",
                 FromNumber = "+15555550101",
                 Recipients = ["+15555550102", "+15555550103"],
-            }),
-            Options.Create(new NotificationOptions
-            {
-                Provider = NotificationProvider.Twilio,
-                DryRun = false,
             }),
             TimeProvider.System,
             NullLogger<TwilioNotificationSender>.Instance);
@@ -135,11 +100,6 @@ public sealed class TwilioNotificationSenderTests
                 Recipients = ["+15555550102", "+15555550103"],
                 SuccessfulRecipientCacheDuration = cacheDuration ?? TimeSpan.FromHours(1),
                 SuccessfulRecipientCacheCapacity = 10,
-            }),
-            Options.Create(new NotificationOptions
-            {
-                Provider = NotificationProvider.Twilio,
-                DryRun = false,
             }),
             timeProvider,
             NullLogger<TwilioNotificationSender>.Instance);

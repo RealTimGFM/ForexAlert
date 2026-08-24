@@ -6,14 +6,14 @@ using Microsoft.Extensions.Options;
 namespace ForexAlert.Notifications;
 
 public sealed class LocalFileNotificationSender(
-    IOptions<LocalFileOptions> options,
+    IOptions<NotificationOptions> options,
     ILogger<LocalFileNotificationSender> logger) : INotificationSender
 {
     private static readonly Encoding Utf8WithoutBom =
         new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
     private readonly string _path =
-        ResolvePath(options.Value.AlertLogPath);
+        ResolvePath(options.Value.LocalFilePath);
 
     private readonly SemaphoreSlim _writeGate = new(1, 1);
 

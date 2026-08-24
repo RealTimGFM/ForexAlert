@@ -26,7 +26,4 @@
     <ProjectReference Include="..\..\src\ForexAlert\ForexAlert.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

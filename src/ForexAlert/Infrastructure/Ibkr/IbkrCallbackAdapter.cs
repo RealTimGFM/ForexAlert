@@ -39,8 +39,12 @@ internal sealed class IbkrCallbackAdapter(TimeProvider timeProvider) : DefaultEW
     public override void error(string value) =>
         ErrorReceived?.Invoke(new IbkrError(-1, 0, "IBKR transport error"));
 
-    public override void error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson) =>
+    public override void error(
+        int id,
+        long errorTime,
+        int errorCode,
+        string errorMsg,
+        string advancedOrderRejectJson) =>
         ErrorReceived?.Invoke(new IbkrError(id, errorCode, errorMsg));
-
     public override void connectionClosed() => ConnectionClosed?.Invoke();
 }

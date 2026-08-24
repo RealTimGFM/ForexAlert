@@ -210,6 +210,114 @@ public sealed class IbkrMarketDataClientTests
     }
 
     [Fact]
+    public async Task HistoricalServiceConnectionStatus_DoesNotFailOrCancelHistoricalRequest()
+    {
+        ScriptedIbkrTransport transport = new() { AutoCompleteInitialData = false };
+        IbkrMarketDataClient client = CreateClient(transport, TimeSpan.FromSeconds(1));
+        try
+        {
+            await client.ConnectAsync(CancellationToken.None);
+            Task subscription = client.SubscribeAsync(
+                [CurrencyPair.Parse("EUR/USD")],
+                CancellationToken.None);
+            await AsyncTestProbe.UntilAsync(() =>
+                transport.Operations.Count(operation => operation.Name == "RequestHistoricalData") == 3);
+
+            int[] historicalRequestIds = transport.Operations
+                .Where(operation => operation.Name == "RequestHistoricalData")
+                .Select(operation => operation.RequestId)
+                .ToArray();
+
+            transport.EmitError(new IbkrError(
+                historicalRequestIds[0],
+                165,
+                "Historical Market Data Service query message: HMDS SERVER CONNECTION WAS SUCCESSFUL."));
+            foreach (int requestId in historicalRequestIds)
+            {
+                EmitSuccessfulHistoricalResponse(transport, requestId);
+            }
+
+            await subscription.WaitAsync(TimeSpan.FromSeconds(1));
+            Assert.DoesNotContain(
+                transport.Operations,
+                operation => operation.Name == "CancelHistoricalData");
+        }
+        finally
+        {
+            await client.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task MarketDataFarmConnectingStatus_DoesNotFailOrRemoveRequests()
+    {
+        ScriptedIbkrTransport transport = new() { AutoCompleteInitialData = false };
+        RequestIdRegistry registry = new();
+        IbkrMarketDataClient client = CreateClient(
+            transport,
+            TimeSpan.FromSeconds(1),
+            registry);
+        ConcurrentQueue<QuoteUpdate> quotes = new();
+        client.QuoteReceived += quotes.Enqueue;
+        try
+        {
+            await client.ConnectAsync(CancellationToken.None);
+            Task subscription = client.SubscribeAsync(
+                [CurrencyPair.Parse("EUR/USD")],
+                CancellationToken.None);
+            await AsyncTestProbe.UntilAsync(() =>
+                transport.Operations.Count(operation => operation.Name == "RequestHistoricalData") == 3);
+
+            int[] historicalRequestIds = transport.Operations
+                .Where(operation => operation.Name == "RequestHistoricalData")
+                .Select(operation => operation.RequestId)
+                .ToArray();
+            transport.EmitError(new IbkrError(
+                historicalRequestIds[0],
+                2119,
+                "Market data farm is connecting:cashfarm"));
+            transport.EmitTick(new IbkrTick(
+                1,
+                1,
+                1.10d,
+                new DateTimeOffset(2026, 8, 23, 12, 0, 0, TimeSpan.Zero)));
+            await AsyncTestProbe.UntilAsync(() => quotes.Count == 1);
+
+            Assert.Equal(4, registry.Snapshot().Count);
+            Assert.DoesNotContain(
+                transport.Operations,
+                operation => operation.Name.StartsWith("Cancel", StringComparison.Ordinal));
+
+            foreach (int requestId in historicalRequestIds)
+            {
+                EmitSuccessfulHistoricalResponse(transport, requestId);
+            }
+
+            await subscription.WaitAsync(TimeSpan.FromSeconds(1));
+        }
+        finally
+        {
+            await client.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task HistoricalDataFailureWithCode165_StillFailsAndCancelsHistoricalRequest()
+    {
+        await AssertHistoricalRequestFailureAsync(
+            165,
+            "Historical Market Data Service query message: no historical data available.");
+    }
+
+    [Fact]
+    public async Task HistoricalDataCancellationWithCode162_RemainsFatal()
+    {
+        await AssertHistoricalRequestFailureAsync(
+            162,
+            "API historical data query cancelled");
+    }
+
+    [Fact]
     public async Task StartupMidwayThroughMinute_DoesNotPublishCurrentHistoricalMinuteAsCompleted()
     {
         DateTimeOffset nowUtc = new(2026, 7, 1, 12, 0, 30, TimeSpan.Zero);
@@ -366,7 +474,7 @@ public sealed class IbkrMarketDataClientTests
                 InitialDataTimeout = TimeSpan.FromSeconds(1),
                 HistoricalRequestSpacing = TimeSpan.Zero,
             }),
-            Options.Create(new MarketScheduleOptions { TimeZone = "America/New_York" }),
+            Options.Create(new ForexAlertOptions { MarketTimeZone = "America/New_York" }),
             timeProvider ?? TimeProvider.System,
             NullLogger<IbkrMarketDataClient>.Instance);
 
@@ -418,6 +526,61 @@ public sealed class IbkrMarketDataClientTests
         {
             await client.DisposeAsync();
         }
+    }
+
+    private static async Task AssertHistoricalRequestFailureAsync(int code, string message)
+    {
+        ScriptedIbkrTransport transport = new() { AutoCompleteInitialData = false };
+        IbkrMarketDataClient client = CreateClient(transport, TimeSpan.FromSeconds(1));
+        try
+        {
+            await client.ConnectAsync(CancellationToken.None);
+            Task subscription = client.SubscribeAsync(
+                [CurrencyPair.Parse("EUR/USD")],
+                CancellationToken.None);
+            await AsyncTestProbe.UntilAsync(() =>
+                transport.Operations.Count(operation => operation.Name == "RequestHistoricalData") == 3);
+
+            int[] historicalRequestIds = transport.Operations
+                .Where(operation => operation.Name == "RequestHistoricalData")
+                .Select(operation => operation.RequestId)
+                .ToArray();
+            int failedRequestId = historicalRequestIds[0];
+            IbkrError error = new(failedRequestId, code, message);
+            transport.EmitError(error);
+            foreach (int requestId in historicalRequestIds.Skip(1))
+            {
+                EmitSuccessfulHistoricalResponse(transport, requestId);
+            }
+
+            InvalidOperationException failure = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => subscription.WaitAsync(TimeSpan.FromSeconds(1)));
+            Assert.Equal(
+                $"IBKR request {error.RequestId} failed with code {error.Code}.",
+                failure.Message);
+            Assert.Contains(
+                transport.Operations,
+                operation => operation.Name == "CancelHistoricalData" &&
+                    operation.RequestId == error.RequestId);
+        }
+        finally
+        {
+            await client.DisposeAsync();
+        }
+    }
+
+    private static void EmitSuccessfulHistoricalResponse(
+        ScriptedIbkrTransport transport,
+        int requestId)
+    {
+        transport.EmitHistoricalBar(new IbkrHistoricalBar(
+            requestId,
+            "1767225600",
+            1.10d,
+            1.11d,
+            1.09d,
+            1.105d));
+        transport.EmitHistoricalDataEnded(requestId);
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider

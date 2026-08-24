@@ -19,9 +19,9 @@ public sealed class LocalFileNotificationSenderTests
         try
         {
             LocalFileNotificationSender sender = new(
-                Options.Create(new LocalFileOptions
+                Options.Create(new NotificationOptions
                 {
-                    AlertLogPath = path,
+                    LocalFilePath = path,
                 }),
                 NullLogger<LocalFileNotificationSender>.Instance);
 

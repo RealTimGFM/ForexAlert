@@ -104,9 +104,9 @@ public sealed class FxMarketScheduleTests
     [Fact]
     public void TradingDayOpen_WithEveningRollover_UsesPreviousOpeningBeforeRollover()
     {
-        FxMarketSchedule schedule = new(Options.Create(new MarketScheduleOptions
+        FxMarketSchedule schedule = new(Options.Create(new ForexAlertOptions
         {
-            TimeZone = "America/New_York",
+            MarketTimeZone = "America/New_York",
             SundayOpenTime = TimeSpan.FromHours(17),
             TradingDayOpenTime = TimeSpan.FromHours(17),
         }));
@@ -119,12 +119,10 @@ public sealed class FxMarketScheduleTests
     }
 
     private static FxMarketSchedule CreateSchedule() =>
-        new(Options.Create(new MarketScheduleOptions
+        new(Options.Create(new ForexAlertOptions
         {
-            TimeZone = "America/New_York",
-            FridayCloseDay = DayOfWeek.Friday,
+            MarketTimeZone = "America/New_York",
             FridayCloseTime = TimeSpan.FromHours(17),
-            SundayOpenDay = DayOfWeek.Sunday,
             SundayOpenTime = TimeSpan.FromHours(17),
             SleepWindowStart = new TimeSpan(23, 30, 0),
             SleepWindowEnd = TimeSpan.FromHours(5),

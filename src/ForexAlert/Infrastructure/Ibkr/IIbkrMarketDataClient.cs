@@ -2,7 +2,7 @@ using ForexAlert.Domain;
 
 namespace ForexAlert.Infrastructure.Ibkr;
 
-public interface IMarketDataSource
+public interface IIbkrMarketDataClient : IAsyncDisposable
 {
     event Action<QuoteUpdate>? QuoteReceived;
 
@@ -24,5 +24,3 @@ public interface IMarketDataSource
 
     Task DisconnectAsync(CancellationToken cancellationToken);
 }
-
-public interface IIbkrMarketDataClient : IMarketDataSource, IAsyncDisposable;

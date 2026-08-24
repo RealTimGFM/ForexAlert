@@ -114,6 +114,9 @@ runtime/
 coverage/
 alerts.txt
 alert-state.json
+cooldowns.json
+*.cooldowns.json
+IBApi.dll
 secrets.json
 temp*.txt
 tempc#.py

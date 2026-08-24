@@ -43,8 +43,6 @@ public sealed record AlertCandidate(
     }
 }
 
-public readonly record struct AlertKey(string RuleName, string CanonicalSymbol);
-
 public sealed record AlertDeliveryState(
     DateTimeOffset LastSentUtc,
     string CandidateFingerprint);

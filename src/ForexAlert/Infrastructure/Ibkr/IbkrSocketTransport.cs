@@ -174,12 +174,18 @@ public sealed class IbkrSocketTransport(TimeProvider timeProvider) : IIbkrTransp
 
     private void PumpMessages(CancellationToken cancellationToken)
     {
+        EReader reader = _reader
+            ?? throw new InvalidOperationException("IBKR message reader is not initialized.");
+
+        EReaderMonitorSignal signal = _signal
+            ?? throw new InvalidOperationException("IBKR message signal is not initialized.");
+
         try
         {
             while (!cancellationToken.IsCancellationRequested && IsConnected)
             {
-                _signal!.waitForSignal();
-                _reader.processMsgs();
+                signal.waitForSignal();
+                reader.processMsgs();
             }
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)

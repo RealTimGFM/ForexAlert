@@ -18,10 +18,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="Exists('$(IBApiAssemblyPath)')">
-    <Reference Include="IBApi">
+    <Reference Include="CSharpAPI">
       <HintPath>$(IBApiAssemblyPath)</HintPath>
       <Private>true</Private>
     </Reference>
+    <PackageReference Include="Google.Protobuf" Version="3.29.5" />
   </ItemGroup>
 
   <ItemGroup Condition="!Exists('$(IBApiAssemblyPath)')">
@@ -32,6 +33,5 @@
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="appsettings.Development.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Update="Simulation\Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

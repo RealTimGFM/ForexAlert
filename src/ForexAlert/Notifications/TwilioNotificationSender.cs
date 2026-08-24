@@ -9,27 +9,15 @@ namespace ForexAlert.Notifications;
 public sealed class TwilioNotificationSender(
     HttpClient httpClient,
     IOptions<TwilioOptions> twilioOptions,
-    IOptions<NotificationOptions> notificationOptions,
     TimeProvider timeProvider,
     ILogger<TwilioNotificationSender> logger) : INotificationSender
 {
     private readonly TwilioOptions _options = twilioOptions.Value;
-    private readonly bool _dryRun = notificationOptions.Value.DryRun;
     private readonly object _cacheGate = new();
     private readonly Dictionary<string, DeliveryCacheEntry> _successfulRecipients = new(StringComparer.Ordinal);
 
     public async Task SendAsync(AlertCandidate alert, CancellationToken cancellationToken)
     {
-        if (_dryRun)
-        {
-            logger.LogInformation(
-                "DRY RUN - Twilio delivery suppressed for {Rule} {Symbol}; recipient count {RecipientCount}",
-                alert.RuleName,
-                alert.CanonicalSymbol,
-                _options.Recipients.Count);
-            return;
-        }
-
         string credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_options.AccountSid}:{_options.AuthToken}"));
         string requestPath = $"2010-04-01/Accounts/{Uri.EscapeDataString(_options.AccountSid)}/Messages.json";
         string message = AlertMessageFormatter.Format(alert);

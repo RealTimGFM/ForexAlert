@@ -11,10 +11,17 @@ public static class IbkrErrorClassifier
         2106,
         2107,
         2108,
+        2119,
         2158,
     ];
 
     public static bool IsInformational(int code) => InformationalCodes.Contains(code);
+
+    public static bool IsHistoricalServiceStatus(IbkrError error) =>
+        error.Code == 165 &&
+        error.Message.Contains(
+            "server connection was successful",
+            StringComparison.OrdinalIgnoreCase);
 
     public static bool IsMissingContract(int code) => code == 200;
 
