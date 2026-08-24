@@ -50,7 +50,7 @@ public sealed class MarketDataStateTests
     }
 
     private static MarketDataState CreateState(TimeSpan? staleAfter = null, TimeSpan? skew = null) => new(
-        Options.Create(new ForexAlertOptions { CurrencyPairs = ["EUR/USD"] }),
+        Options.Create(new ForexAlertOptions { CurrencyPairs = ["EUR/USD"], MaxCandlesPerInterval = 2_000 }),
         Options.Create(new IbkrOptions { QuoteStaleAfter = staleAfter ?? TimeSpan.FromMinutes(1), MaximumBidAskSkew = skew ?? TimeSpan.FromSeconds(2) }),
         TimeProvider.System);
 }

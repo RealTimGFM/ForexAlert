@@ -79,22 +79,57 @@ public sealed class ForexMonitorTests
         Assert.Equal(1, client.DisconnectCalls);
     }
 
+    [Fact]
+    public async Task Stop_UsesConfiguredDisconnectTimeout()
+    {
+        FakeIbkrMarketDataClient client = new() { WaitForDisconnectCancellation = true };
+        ForexMonitor monitor = CreateMonitor(
+            client,
+            out _,
+            out _,
+            disconnectTimeout: TimeSpan.FromMilliseconds(20));
+
+        await monitor.StartAsync(CancellationToken.None);
+        await AsyncTestProbe.UntilAsync(() => client.SubscribeCalls == 1);
+        await monitor.StopAsync(CancellationToken.None);
+
+        Assert.True(client.DisconnectCancellationObserved);
+    }
+
     private static ForexMonitor CreateMonitor(
         FakeIbkrMarketDataClient client,
         out CapturingNotificationSender notifications,
-        out MarketDataState marketData)
+        out MarketDataState marketData,
+        TimeSpan? disconnectTimeout = null)
     {
         ForexAlertOptions app = new()
         {
             CurrencyPairs = ["EUR/USD"],
+            DailyThresholdPercent = 1.4,
+            SleepWindowNegativeThresholdPercent = -2.4,
+            HourlyThresholdPercent = 1.4,
+            WeeklyThresholdPercent = 5,
+            OneMinuteEnabled = false,
+            OneMinuteThresholdPercent = 1.4,
+            DailyBaseline = DailyBaselineKind.PreviousClose,
+            Cooldown = TimeSpan.FromHours(24),
             EvaluationInterval = TimeSpan.FromMilliseconds(5),
             MarketTimeZone = "America/New_York",
+            FridayCloseTime = TimeSpan.FromHours(17),
+            SundayOpenTime = TimeSpan.FromHours(17),
+            SleepWindowStart = new TimeSpan(23, 30, 0),
+            SleepWindowEnd = TimeSpan.FromHours(5),
+            MaxCandlesPerInterval = 2_000,
             CooldownStatePath = Path.Combine(Path.GetTempPath(), $"forexalert-monitor-{Guid.NewGuid():N}.json"),
         };
         IbkrOptions ibkr = new()
         {
+            DisconnectTimeout = disconnectTimeout ?? TimeSpan.FromSeconds(10),
+            MaxRetryAttempts = 5,
             InitialRetryDelay = TimeSpan.FromMilliseconds(1),
             MaximumRetryDelay = TimeSpan.FromMilliseconds(1),
+            QuoteStaleAfter = TimeSpan.FromSeconds(15),
+            MaximumBidAskSkew = TimeSpan.FromSeconds(2),
             DailyHistoryRefreshInterval = TimeSpan.FromMilliseconds(15),
         };
         IOptions<ForexAlertOptions> appOptions = Options.Create(app);
@@ -147,6 +182,10 @@ public sealed class ForexMonitorTests
 
         public IReadOnlyList<CurrencyPair> SubscribedPairs { get; private set; } = [];
 
+        public bool WaitForDisconnectCancellation { get; init; }
+
+        public bool DisconnectCancellationObserved { get; private set; }
+
         public Task ConnectAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -170,12 +209,21 @@ public sealed class ForexMonitorTests
             return Task.CompletedTask;
         }
 
-        public Task DisconnectAsync(CancellationToken cancellationToken)
+        public async Task DisconnectAsync(CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             Interlocked.Increment(ref _disconnectCalls);
+            if (WaitForDisconnectCancellation)
+            {
+                TaskCompletionSource canceled = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                using CancellationTokenRegistration registration = cancellationToken.Register(() => canceled.TrySetResult());
+                Task completed = await Task.WhenAny(canceled.Task, Task.Delay(TimeSpan.FromMilliseconds(250)));
+                DisconnectCancellationObserved = completed == canceled.Task;
+            }
+            else
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
             Volatile.Write(ref _connected, 0);
-            return Task.CompletedTask;
         }
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;

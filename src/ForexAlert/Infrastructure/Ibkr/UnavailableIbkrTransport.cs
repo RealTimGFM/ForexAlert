@@ -7,7 +7,7 @@ public sealed class UnavailableIbkrTransport : IIbkrTransport
     public const string ErrorMessage =
         "Live IBKR connectivity is unavailable in the public-safe build. " +
         "Obtain the official TWS API directly from Interactive Brokers, then build with " +
-        "-p:IBApiAssemblyPath=<absolute-path-to-IBApi.dll>.";
+        "-p:IBApiAssemblyPath=<absolute-path-to-CSharpAPI.dll>.";
 
     public event Action? Ready
     {

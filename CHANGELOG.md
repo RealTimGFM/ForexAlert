@@ -22,7 +22,7 @@ All notable changes to ForexAlert are documented here. The format follows Keep a
 - Reduced notifications to LocalFile and Twilio, with LocalFile as the safe default.
 - Replaced abstraction-oriented and simulation tests with a focused behavioral suite.
 - Renamed solution, project, assembly, and user-owned namespaces from ForexAI to ForexAlert.
-- Made live IBKR support optional through an operator-supplied official `IBApi.dll`, with connection timeout enforcement in user-authored code.
+- Made live IBKR support optional through an operator-supplied official `CSharpAPI.dll`, with connection timeout enforcement in user-authored code.
 - Replaced static dictionaries, overlapping timers, direct file writes, and hardcoded values with injected services and options.
 
 ### Removed

@@ -15,7 +15,7 @@ The application now follows one visible path: `Program -> ForexMonitor -> IbkrMa
 
 ## Deliberately retained complexity
 
-The IBKR client, transport interface, callback adapter, request registry, and error classifier remain. They implement connection timeout, callback serialization, reconnect signaling, historical pacing/completion, request-ID ownership, inverse-contract fallback, quote-side inversion, subscription cancellation, and proprietary `IBApi.dll` isolation. Flattening those responsibilities would make broker behavior harder to verify and less reliable.
+The IBKR client, transport interface, callback adapter, request registry, and error classifier remain. They implement connection timeout, callback serialization, reconnect signaling, historical pacing/completion, request-ID ownership, inverse-contract fallback, quote-side inversion, subscription cancellation, and proprietary `CSharpAPI.dll` isolation. Flattening those responsibilities would make broker behavior harder to verify and less reliable.
 
 The notification interface also remains because LocalFile and Twilio are genuine external side-effect boundaries and tests must substitute delivery safely.
 

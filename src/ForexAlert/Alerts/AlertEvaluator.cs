@@ -54,7 +54,7 @@ public sealed class AlertEvaluator(
         Add(candidates, CheckDaily(pair, evaluationTimeUtc));
         Add(candidates, CheckCompletedCandle(pair, evaluationTimeUtc, Hour, "hourly-movement", _options.HourlyThresholdPercent));
         Add(candidates, CheckWeekly(pair, evaluationTimeUtc));
-        if (_options.OneMinuteEnabled) Add(candidates, CheckCompletedCandle(pair, evaluationTimeUtc, Minute, "one-minute-movement", _options.OneMinuteThresholdPercent));
+        if (_options.OneMinuteEnabled == true) Add(candidates, CheckCompletedCandle(pair, evaluationTimeUtc, Minute, "one-minute-movement", _options.OneMinuteThresholdPercent));
         return candidates;
     }
 
@@ -63,7 +63,7 @@ public sealed class AlertEvaluator(
         if (!marketData.TryGetMidPrice(pair, now, out PricePoint? current) || current is null) return null;
         Candle? baseline = _options.DailyBaseline == DailyBaselineKind.PreviousClose
             ? marketData.GetCompletedCandles(pair, Day, now, 1).LastOrDefault()
-            : marketData.GetCompletedCandles(pair, Minute, now, 2_000).FirstOrDefault(c => c.StartUtc == schedule.GetTradingDayOpenUtc(now));
+            : marketData.GetCompletedCandles(pair, Minute, now, _options.MaxCandlesPerInterval).FirstOrDefault(c => c.StartUtc == schedule.GetTradingDayOpenUtc(now));
         if (baseline is null) return null;
         double baselinePrice = _options.DailyBaseline == DailyBaselineKind.PreviousClose ? baseline.Close : baseline.Open;
         DateTimeOffset baselineTime = _options.DailyBaseline == DailyBaselineKind.PreviousClose ? baseline.EndUtc : baseline.StartUtc;

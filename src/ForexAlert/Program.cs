@@ -15,9 +15,14 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        DotNetEnv.Env
+            .NoClobber()
+            .TraversePath()
+            .Load();
+
         if (args.Length > 0)
         {
-            await Console.Error.WriteLineAsync("ForexAlert is configured through appsettings.json and FOREXALERT_ environment variables; command-line options are not supported.");
+            await Console.Error.WriteLineAsync("ForexAlert is configured through .env and FOREXALERT_ environment variables; command-line options are not supported.");
             return 2;
         }
 
@@ -33,7 +38,11 @@ public static class Program
         builder.Services.AddSingleton<FxMarketSchedule>();
         builder.Services.AddSingleton<CooldownStore>();
         builder.Services.AddSingleton<AlertEvaluator>();
-        builder.Services.AddSingleton(new HttpClient { BaseAddress = new Uri("https://api.twilio.com/"), Timeout = TimeSpan.FromSeconds(30) });
+        builder.Services.AddSingleton(provider => new HttpClient
+        {
+            BaseAddress = new Uri("https://api.twilio.com/"),
+            Timeout = provider.GetRequiredService<IOptions<TwilioOptions>>().Value.RequestTimeout,
+        });
         builder.Services.AddSingleton<LocalFileNotificationSender>();
         builder.Services.AddSingleton<TwilioNotificationSender>();
         builder.Services.AddSingleton<INotificationSender>(provider =>
@@ -51,6 +60,7 @@ public static class Program
 
         using IHost host = builder.Build();
         IReadOnlyList<string> errors = OptionsValidation.Validate(
+            builder.Configuration,
             host.Services.GetRequiredService<IOptions<ForexAlertOptions>>().Value,
             host.Services.GetRequiredService<IOptions<IbkrOptions>>().Value,
             host.Services.GetRequiredService<IOptions<NotificationOptions>>().Value,

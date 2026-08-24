@@ -110,7 +110,7 @@ public sealed class ForexMonitor(
 
     private async Task SafeDisconnectAsync()
     {
-        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10));
+        using CancellationTokenSource timeout = new(_ibkr.DisconnectTimeout);
         try { await ibkr.DisconnectAsync(timeout.Token).ConfigureAwait(false); }
         catch (Exception exception) when (exception is OperationCanceledException or TimeoutException or IOException)
         { logger.LogWarning(exception, "IBKR disconnect did not complete cleanly"); }

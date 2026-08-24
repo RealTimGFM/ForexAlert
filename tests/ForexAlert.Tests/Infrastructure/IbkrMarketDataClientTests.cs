@@ -389,6 +389,10 @@ public sealed class IbkrMarketDataClientTests
             TimeSpan.FromSeconds(1),
             options: new IbkrOptions
             {
+                Host = "127.0.0.1",
+                PaperTrading = true,
+                PaperPort = 4002,
+                LivePort = 4001,
                 ConnectionTimeout = TimeSpan.FromSeconds(1),
                 InitialDataTimeout = TimeSpan.FromSeconds(2),
                 HistoricalRequestSpacing = spacing,
@@ -470,6 +474,10 @@ public sealed class IbkrMarketDataClientTests
             registry ?? new RequestIdRegistry(),
             Options.Create(options ?? new IbkrOptions
             {
+                Host = "127.0.0.1",
+                PaperTrading = true,
+                PaperPort = 4002,
+                LivePort = 4001,
                 ConnectionTimeout = connectionTimeout,
                 InitialDataTimeout = TimeSpan.FromSeconds(1),
                 HistoricalRequestSpacing = TimeSpan.Zero,

@@ -9,11 +9,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
     <AnalysisLevel>latest</AnalysisLevel>
-    <UserSecretsId>ForexAlert-Development</UserSecretsId>
     <DefineConstants Condition="Exists('$(IBApiAssemblyPath)')">$(DefineConstants);IBAPI_AVAILABLE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
   </ItemGroup>
 

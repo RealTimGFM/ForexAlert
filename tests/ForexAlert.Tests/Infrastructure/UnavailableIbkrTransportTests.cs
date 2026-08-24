@@ -19,6 +19,6 @@ public sealed class UnavailableIbkrTransportTests
 
         Assert.Contains("official TWS API", exception.Message, StringComparison.Ordinal);
         Assert.Contains("IBApiAssemblyPath", exception.Message, StringComparison.Ordinal);
-        Assert.Contains("IBApi.dll", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("CSharpAPI.dll", exception.Message, StringComparison.Ordinal);
     }
 }

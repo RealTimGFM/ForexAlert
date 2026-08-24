@@ -28,6 +28,8 @@ public sealed class TwilioNotificationSenderTests
                 AuthToken = "test-token-not-a-secret",
                 FromNumber = "+15555550101",
                 Recipients = ["+15555550102", "+15555550103"],
+                SuccessfulRecipientCacheDuration = TimeSpan.FromHours(24),
+                SuccessfulRecipientCacheCapacity = 10_000,
             }),
             TimeProvider.System,
             NullLogger<TwilioNotificationSender>.Instance);

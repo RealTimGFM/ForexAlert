@@ -55,6 +55,30 @@ public sealed class AlertEvaluatorTests
     }
 
     [Fact]
+    public void Daily_TradingDayOpen_UsesConfiguredMinuteCandleLimit()
+    {
+        TestContext context = CreateContext(
+            options =>
+            {
+                options.DailyBaseline = DailyBaselineKind.TradingDayOpen;
+                options.TradingDayOpenTime = new TimeSpan(11, 54, 0);
+                options.MaxCandlesPerInterval = 5;
+            },
+            stateCapacity: 6);
+        DateTimeOffset opening = Now.AddMinutes(-6);
+        for (int index = 0; index < 6; index++)
+        {
+            DateTimeOffset start = opening.AddMinutes(index);
+            context.State.AddHistoricalCandle(new(Pair, start, TimeSpan.FromMinutes(1), 1, 1, 1, 1));
+        }
+        context.State.ProcessQuote(new(Pair, QuoteSide.Bid, 1.019, Now));
+        context.State.ProcessQuote(new(Pair, QuoteSide.Ask, 1.021, Now));
+
+        Assert.Equal(6, context.State.GetCompletedCandles(Pair, TimeSpan.FromMinutes(1), Now, 10).Count);
+        Assert.DoesNotContain(context.Evaluator.Evaluate(Pair, Now), candidate => candidate.RuleName == "daily-movement");
+    }
+
+    [Fact]
     public void Weekly_UsesFiveCompletedWeekdayCloses()
     {
         TestContext context = CreateContext(options => options.WeeklyThresholdPercent = 4);
@@ -97,11 +121,36 @@ public sealed class AlertEvaluatorTests
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }
 
-    private static TestContext CreateContext(Action<ForexAlertOptions>? configure = null, INotificationSender? sender = null, string? cooldownPath = null)
+    private static TestContext CreateContext(
+        Action<ForexAlertOptions>? configure = null,
+        INotificationSender? sender = null,
+        string? cooldownPath = null,
+        int? stateCapacity = null)
     {
-        ForexAlertOptions app = new() { CurrencyPairs = ["EUR/USD"], DailyThresholdPercent = 1, HourlyThresholdPercent = 1, WeeklyThresholdPercent = 5, OneMinuteThresholdPercent = 1, CooldownStatePath = cooldownPath ?? Path.Combine(Path.GetTempPath(), $"unused-{Guid.NewGuid():N}.json") };
+        ForexAlertOptions app = new()
+        {
+            CurrencyPairs = ["EUR/USD"],
+            DailyThresholdPercent = 1,
+            SleepWindowNegativeThresholdPercent = -2.4,
+            HourlyThresholdPercent = 1,
+            WeeklyThresholdPercent = 5,
+            OneMinuteEnabled = false,
+            OneMinuteThresholdPercent = 1,
+            DailyBaseline = DailyBaselineKind.PreviousClose,
+            Cooldown = TimeSpan.FromHours(24),
+            MarketTimeZone = "America/New_York",
+            FridayCloseTime = TimeSpan.FromHours(17),
+            SundayOpenTime = TimeSpan.FromHours(17),
+            SleepWindowStart = new TimeSpan(23, 30, 0),
+            SleepWindowEnd = TimeSpan.FromHours(5),
+            MaxCandlesPerInterval = 2_000,
+            CooldownStatePath = cooldownPath ?? Path.Combine(Path.GetTempPath(), $"unused-{Guid.NewGuid():N}.json"),
+        };
         configure?.Invoke(app);
-        MarketDataState state = new(Options.Create(app), Options.Create(new IbkrOptions { QuoteStaleAfter = TimeSpan.FromMinutes(1), MaximumBidAskSkew = TimeSpan.FromSeconds(2) }), TimeProvider.System);
+        ForexAlertOptions stateOptions = stateCapacity.HasValue
+            ? new ForexAlertOptions { MaxCandlesPerInterval = stateCapacity.Value }
+            : app;
+        MarketDataState state = new(Options.Create(stateOptions), Options.Create(new IbkrOptions { QuoteStaleAfter = TimeSpan.FromMinutes(1), MaximumBidAskSkew = TimeSpan.FromSeconds(2) }), TimeProvider.System);
         FxMarketSchedule schedule = new(Options.Create(app));
         AlertEvaluator evaluator = new(state, schedule, sender ?? new CapturingNotificationSender(), new CooldownStore(app.CooldownStatePath, AppContext.BaseDirectory), Options.Create(app), NullLogger<AlertEvaluator>.Instance);
         return new(state, evaluator);
